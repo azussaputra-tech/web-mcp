@@ -31,6 +31,7 @@ const ctx = await esbuild.context({
   alias: {
     "@": "./src/",
     "@web-mcp/syn": resolve(workingDir, "../packages/syn/index.ts"),
+    "syn": resolve(workingDir, "node_modules/syn"),
   },
   define: {
     __DEV__: JSON.stringify(__DEV__),
