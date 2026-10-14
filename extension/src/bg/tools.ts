@@ -120,13 +120,85 @@ export function registerPageTools(server: McpServer) {
       args: ["press_key", { element, ref, key }],
     })
   })
+
+  server.tool(
+    "get_file_inputs",
+    "List file input elements available on the current page",
+    async () => {
+      const tab = await tabReady()
+      return msgInvoker.invoke({
+        tabId: tab.id,
+        func: InvokerFunc.CallTools,
+        args: ["get_file_inputs", {}],
+      })
+    }
+  )
+
+  const fileSchema = z.object({
+    name: z.string().describe("File name including extension"),
+    mime_type: z.string().optional().describe("MIME type such as image/png"),
+    base64: z.string().describe("Base64 encoded file bytes, without a data URL prefix"),
+  })
+
+  server.tool(
+    "upload_file",
+    "Attach one file to a file input on the current page",
+    {
+      ...elementSchema,
+      file: fileSchema,
+    },
+    async ({ element, ref, file }) => {
+      const tab = await tabReady()
+      return msgInvoker.invoke({
+        tabId: tab.id,
+        func: InvokerFunc.CallTools,
+        args: ["upload_files", { element, ref, files: [file] }],
+      })
+    }
+  )
+
+  server.tool(
+    "upload_files",
+    "Attach one or more files to a file input on the current page",
+    {
+      ...elementSchema,
+      files: z.array(fileSchema).min(1),
+    },
+    async ({ element, ref, files }) => {
+      const tab = await tabReady()
+      return msgInvoker.invoke({
+        tabId: tab.id,
+        func: InvokerFunc.CallTools,
+        args: ["upload_files", { element, ref, files }],
+      })
+    }
+  )
+
+  server.tool(
+    "upload_file_from_url",
+    "Fetch a file from an accessible URL and attach it to a file input",
+    {
+      ...elementSchema,
+      url: z.string().describe("Source URL, including http(s), data, blob, or file URL when browser permissions allow it"),
+      name: z.string().optional().describe("Optional file name override"),
+      mime_type: z.string().optional().describe("Optional MIME type override"),
+    },
+    async ({ element, ref, url, name, mime_type }) => {
+      const tab = await tabReady()
+      return msgInvoker.invoke({
+        tabId: tab.id,
+        func: InvokerFunc.CallTools,
+        args: ["upload_file_from_url", { element, ref, url, name, mime_type }],
+      })
+    }
+  )
 }
 
 async function tabReady() {
   const tabs = await chrome.tabs.query({ active: true })
   const tab = tabs[0]
-  const url = tab.pendingUrl || tab.url
-  if (!tab || !url.startsWith("http")) {
+  const url = tab?.pendingUrl || tab?.url
+  if (!tab || !url?.startsWith("http")) {
     throw Error(
       "The current tab is unavailable, Please open or switch to the target tab first"
     )
@@ -143,6 +215,7 @@ async function tabReady() {
     }
     chrome.tabs.onUpdated.addListener(handleUpdated)
   })
+  return tab
 }
 
 export function insiderTools(server: McpServer) {
