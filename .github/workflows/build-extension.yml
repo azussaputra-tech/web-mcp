@@ -50,3 +50,25 @@ jobs:
           name: gnemon-edge-live-extension
           path: extension/package/web-mcp-chrome-*.zip
           if-no-files-found: error
+
+      - name: Pack signed CRX3 for Edge Android
+        run: |
+          set -euo pipefail
+          chrome_bin="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          "$chrome_bin" --no-sandbox --no-message-box --pack-extension="$PWD/dist/chrome"
+          test -s dist/chrome.crx
+          python3 -c 'import pathlib,struct; p=pathlib.Path("dist/chrome.crx"); b=p.read_bytes(); assert b[:4]==b"Cr24"; assert struct.unpack("<I",b[4:8])[0]==3; print("Verified CRX3 header:",len(b),"bytes")'
+          cp dist/chrome.crx package/gnemon-edge-live-android.crx
+          cp dist/chrome.crx package/gnemon-edge-live-android.bin
+          sha256sum package/gnemon-edge-live-android.crx package/gnemon-edge-live-android.bin > package/gnemon-edge-live-android.sha256
+          rm -f dist/chrome.pem
+
+      - name: Upload Android CRX package
+        uses: actions/upload-artifact@v4
+        with:
+          name: gnemon-edge-live-android-crx
+          path: |
+            extension/package/gnemon-edge-live-android.crx
+            extension/package/gnemon-edge-live-android.bin
+            extension/package/gnemon-edge-live-android.sha256
+          if-no-files-found: error
