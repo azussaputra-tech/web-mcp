@@ -38,6 +38,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Prepare package directory
+        run: mkdir -p package
+
       - name: Build extension
         run: pnpm build
 
