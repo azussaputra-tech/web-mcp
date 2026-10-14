@@ -17,7 +17,7 @@ const outdir = `./dist/${browser}`
 const port = 5172
 
 const ctx = await esbuild.context({
-  absWorkingDir: resolve(dirname(fileURLToPath(import.meta.url))),
+  absWorkingDir: workingDir,
   entryPoints: {
     "js/bg": "./src/bg/index.ts",
     "js/content-main": "./src/content/main.ts",
@@ -30,6 +30,7 @@ const ctx = await esbuild.context({
   outdir: outdir,
   alias: {
     "@": "./src/",
+    "@web-mcp/syn": resolve(workingDir, "../packages/syn/index.ts"),
   },
   define: {
     __DEV__: JSON.stringify(__DEV__),
@@ -84,9 +85,7 @@ async function stubHtml() {
       )
       .replace(
         "<head>",
-        `<head>
-<script type="module" src="http://localhost:${port}/scripts/hmr.js"></script>
-`
+        `<head>\n<script type="module" src="http://localhost:${port}/scripts/hmr.js"></script>\n`
       )
 
     await fs.writeFile(`${outdir}/${name}.html`, html)
