@@ -1,0 +1,52 @@
+name: Build Edge Extension
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'extension/**'
+      - '.github/workflows/build-extension.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: extension
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: extension/pnpm-lock.yaml
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm type-check
+
+      - name: Build extension
+        run: pnpm build
+
+      - name: Upload extension ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: gnemon-edge-live-extension
+          path: extension/package/web-mcp-chrome-*.zip
+          if-no-files-found: error
